@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class Scraper:
-    _DOWNLOAD_REGEX = re.compile(r"^Direct\s+Download")
+#    _DOWNLOAD_REGEX = re.compile(r"^Direct\s+Download")
+    _DOWNLOAD_REGEX = re.compile(r"^Mediafire\s+Download")
     _UPLOADER_REGEX = re.compile(
         r"\|([^\|]*?\s*?)?by:? (?P<uploader>.*)\|?", re.IGNORECASE
     )
