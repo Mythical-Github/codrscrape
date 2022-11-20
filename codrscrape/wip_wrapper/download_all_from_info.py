@@ -21,8 +21,8 @@ def is_download_link_functional(download_link):
             return True
         else:
             return False
-    except Exception as e:
-        return e
+    except:
+        return False
 
 
 def is_valid_mod_archive(input_file):
@@ -31,13 +31,15 @@ def is_valid_mod_archive(input_file):
             os.remove(input_file)
             return False
         else:
+            os.remove(file_path)
             return True
     except:
         return True
 
 
 def download_file(download_link, output_path):
-    open(output_path, 'wb').write(requests.get(download_link, allow_redirects=True).content)
+    if not download_link == False:
+        open(output_path, 'wb').write(requests.get(download_link, allow_redirects=True).content)
 
 
 def get_json_files_in_dir(input_dir):
@@ -54,6 +56,7 @@ def get_download_link_from_json(input_file):
             download_link = json.load(input_file)["download"]
             return download_link
     else:
+        exception_array.append(input_file)
         return False
 
 
@@ -76,25 +79,30 @@ for i in metadata_json_dict:
     file_path = (metadata_json_dict[i] + "\\mod.zip")
     print()
     print("Checking if " + file_path + " Already Exists")
+    print(file_path)
     if os.path.isfile(file_path):
         print(file_path + " Already Exists")
         print("Checking " + file_path + " Validity")
         if not is_valid_mod_archive(file_path):
-            print("File Wasn't Valid, Checking Download Link")
-            if is_download_link_functional(get_download_link_from_json(i)):
-                print("Download Link Functional, Redownloading")
-                download_file(get_download_link_from_json(i), file_path)
-                print("File Downloaded")
-            else:
-                print("Download Link Is Not Functional, Adding To Error Array")
-                exception_array.append(file_path)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+                print("File Wasn't Valid, Checking Download Link")
+                if is_download_link_functional(get_download_link_from_json(i)):
+                    print("Download Link Functional, Redownloading")
+                    download_file(get_download_link_from_json(i), file_path)
+                    print("File Downloaded")
+                    if not is_valid_mod_archive(file_path):
+                        exception_array.append(file_path)
+                else:
+                    print("Download Link Is Not Functional, Adding To Error Array")
+                    exception_array.append(file_path)
         else:
             print("Mod Archive Is Valid")
     else:
         print("Mod.zip Doesn't Currently Exist")
         print("Checking Download Link Validity")
         if is_download_link_functional(get_download_link_from_json(i)):
-            print("Download Link Functional, Redownloading")
+            print("Download Link Functional, Downloading")
             download_file(get_download_link_from_json(i), file_path)
             print("File Downloaded")
         else:
@@ -105,3 +113,4 @@ print_final()
 time.sleep(999999)
 
 quit()
+
