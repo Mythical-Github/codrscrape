@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="eb5b0077-d7f8-49df-9229-f5f50f4f35cc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/codrscrape.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codrscrape.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codrscrape/wrapper.py" beforeDir="false" afterPath="$PROJECT_DIR$/codrscrape/wrapper.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
