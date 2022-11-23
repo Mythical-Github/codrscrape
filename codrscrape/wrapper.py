@@ -9,14 +9,14 @@ import subprocess
 
 exception_array = []
 
-DIR_TO_PROCESS = pathlib.Path(r"..\Output")
+DIR_TO_PROCESS = pathlib.Path(r"D:\codrscrape\Output")
 SEVEN_ZIP_7Z_EXE = r"C:\Program Files\7-Zip\7z.exe"
 LINK_LIST = {
     r"WaW Campaign Maps": r"https://callofdutyrepo.com/waw-campaign-maps/",
     #    r"Waw Zombie Maps": r"https://callofdutyrepo.com/wawmaps/",
     r"WaW Mods": r"https://callofdutyrepo.com/waw-mods/",
-    r"BO1 Mods": r"https://callofdutyrepo.com/bo1-mods/",
-    r"BO1 Maps": r"https://callofdutyrepo.com/bo1-maps-by-name/",
+    # r"BO1 Mods": r"https://callofdutyrepo.com/bo1-mods/",
+    # r"BO1 Maps": r"https://callofdutyrepo.com/bo1-maps-by-name/",
     #    r"BO3 Maps": r"https://callofdutyrepo.com/bo3-maps/",
     #    r"BO3 Mods": r"https://callofdutyrepo.com/bo3-zombie-mods/",
 }
@@ -38,7 +38,7 @@ class CoDSpecific:
     @staticmethod
     def download_info(input_dir: pathlib.Path):
         for link in LINK_LIST:
-            path = pathlib.Path(f"{str(input_dir)}\\link".replace(" ", "_"))
+            path = pathlib.Path(input_dir)
             archive = pathlib.Path(f"{path}\\Archive {link}.txt".replace(" ", "_"))
             if not pathlib.Path.is_dir(path):
                 pathlib.Path.mkdir(path)
@@ -47,18 +47,16 @@ class CoDSpecific:
     @staticmethod
     def download_mods(input_array):
         for json_ in input_array:
-            if json_.endswith("metadata.json"):
-                test = pathlib.Path(json_)
-                test_2 = pathlib.Path.stem(test)
-                file_path = pathlib.Path(f"{test_2}\\mod.zip")
+            if str(json_).endswith("metadata.json"):
+                file_path = pathlib.Path(f"{get_one_dir_up(json_)}\\mod.zip")
                 print()
                 print(f"Checking if {file_path} Already Exists")
                 if pathlib.Path.is_file(file_path):
                     print(f"{file_path} Already Exists")
                     print(f"Checking {file_path} Validity")
                     if does_file_begin_with_str(file_path, "<!-- Copyright"):
-                        if os.path.isfile(file_path):
-                            os.remove(file_path)
+                        if pathlib.Path.is_file(file_path):
+                            pathlib.Path.unlink(file_path)
                             print("File Wasn't Valid, Checking Download Link")
                             if is_download_link_functional(get_item_from_json(json_, "download")):
                                 print("Download Link Functional, Re-downloading")
@@ -118,7 +116,7 @@ def does_file_begin_with_str(input_file: pathlib.Path, input_string: str) -> boo
 
 
 def remove_readonly(func, path, _):
-    os.chmod(path, stat.S_IWRITE)
+    pathlib.Path.chmod(path, stat.S_IWRITE)
     func(path)
 
 
