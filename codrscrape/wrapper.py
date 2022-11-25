@@ -1,4 +1,4 @@
-import os
+import glob
 import stat
 import time
 import json
@@ -15,8 +15,8 @@ LINK_LIST = {
     r"WaW Campaign Maps": r"https://callofdutyrepo.com/waw-campaign-maps/",
     #    r"Waw Zombie Maps": r"https://callofdutyrepo.com/wawmaps/",
     r"WaW Mods": r"https://callofdutyrepo.com/waw-mods/",
-    # r"BO1 Mods": r"https://callofdutyrepo.com/bo1-mods/",
-    # r"BO1 Maps": r"https://callofdutyrepo.com/bo1-maps-by-name/",
+    r"BO1 Mods": r"https://callofdutyrepo.com/bo1-mods/",
+    r"BO1 Maps": r"https://callofdutyrepo.com/bo1-maps-by-name/",
     #    r"BO3 Maps": r"https://callofdutyrepo.com/bo3-maps/",
     #    r"BO3 Mods": r"https://callofdutyrepo.com/bo3-zombie-mods/",
 }
@@ -84,17 +84,17 @@ class CoDSpecific:
 
     @staticmethod
     def organize_unzipped_mods(input_dir: pathlib.Path):
-        for root, dirs, files in os.walk(input_dir):
-            if r"$1" in root:
-                if root.endswith(r"$1"):
-                    if len(os.listdir(root)) == 0:
-                        shutil.rmtree(root)
-                    else:
-                        shutil.move(pathlib.Path(root), get_one_dir_up(root))
-                        print()
-            if r"$PLUGINSDIR" in root:
-                shutil.rmtree(root)
-                print(f"{root} Was Removed")
+        for file in get_files_by_extension_in_tree(input_dir, "$1"):
+            if str(file).endswith(r"$1"):
+                if is_dir_empty(file):
+                    shutil.rmtree(file)
+                else:
+                    try:
+                        shutil.move(pathlib.Path(file), get_one_dir_up(file))
+                    except Exception as FailedOrganizationError:
+                        return FailedOrganizationError
+        for file in get_files_by_extension_in_tree(input_dir, "$PLUGINSDIR"):
+            shutil.rmtree(file)
 
     @staticmethod
     def extract_mod_archives(input_dir: pathlib.Path):
@@ -126,10 +126,8 @@ def install_seven_zip():
 
 def get_files_by_extension_in_tree(input_dir: pathlib.Path, input_type: str) -> list:
     file_array = []
-    for root, dirs, files in os.walk(input_dir):
-        for file in files:
-            if file.endswith(input_type):
-                file_array.append(pathlib.Path(f"{root}\\{file}"))
+    for file in glob.glob(f"{input_dir}/**/*{input_type}", recursive=True):
+        file_array.append(pathlib.Path(file))
     return file_array
 
 
@@ -151,10 +149,8 @@ def extract_archive(input_archive: pathlib.Path, output_folder: pathlib.Path):
 
 
 def del_files_by_ext_in_tree(input_dir: pathlib.Path, file_type: str):
-    for root, dirs, files in os.walk(str(input_dir)):
-        for file in files:
-            if file.endswith(file_type):
-                pathlib.Path.unlink(pathlib.Path(f"{root}\\{file}"))
+    for i in get_files_by_extension_in_tree(input_dir, file_type):
+        pathlib.Path.unlink(i)
 
 
 def is_download_link_functional(download_link: str) -> bool:
@@ -163,8 +159,8 @@ def is_download_link_functional(download_link: str) -> bool:
             return True
         else:
             return False
-    except Exception as ex:
-        print(ex)
+    except Exception as DownloadLinkNotFunctionError:
+        print(DownloadLinkNotFunctionError)
         return False
 
 
@@ -187,15 +183,26 @@ def get_one_dir_up(input_dir: pathlib.Path) -> pathlib.Path:
     return pathlib.Path(input_dir).parents[0]
 
 
+def is_dir_empty(input_dir: pathlib.Path) -> bool:
+    initial_count = 0
+    for path in input_dir.iterdir():
+        if path.is_file():
+            initial_count += 1
+    if initial_count == 0:
+        return True
+    else:
+        return False
+
+
 CoDSpecific.download_info(DIR_TO_PROCESS)
 del_files_by_ext_in_tree(DIR_TO_PROCESS, ".tmp")
-CoDSpecific.download_mods(get_files_by_extension_in_tree(DIR_TO_PROCESS, ".json"))
+CoDSpecific.download_mods(get_files_by_extension_in_tree(DIR_TO_PROCESS, "metadata.json"))
 CoDSpecific.extract_mod_archives(DIR_TO_PROCESS)
 CoDSpecific.organize_unzipped_mods(DIR_TO_PROCESS)
 CoDSpecific.print_final()
 time.sleep(999999)
 quit()
 
+
 # To Do List:
 # finish organize_unzipped_mods
-# Replace os.walk with pathlib/r.glob
