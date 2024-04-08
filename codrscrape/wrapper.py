@@ -9,14 +9,14 @@ import subprocess
 
 exception_array = []
 
-DIR_TO_PROCESS = pathlib.Path(r"D:\codrscrape\Output")
-SEVEN_ZIP_7Z_EXE = r"C:\Program Files\7-Zip\7z.exe"
+DIR_TO_PROCESS = pathlib.Path("D:/server_root/file_servers/call_of_duty/output")
+SEVEN_ZIP_7Z_EXE = "C:/Program Files/7-Zip/7z.exe"
 LINK_LIST = {
-    r"WaW Campaign Maps": r"https://callofdutyrepo.com/waw-campaign-maps/",
-    #    r"Waw Zombie Maps": r"https://callofdutyrepo.com/wawmaps/",
-    r"WaW Mods": r"https://callofdutyrepo.com/waw-mods/",
-    r"BO1 Mods": r"https://callofdutyrepo.com/bo1-mods/",
-    r"BO1 Maps": r"https://callofdutyrepo.com/bo1-maps-by-name/",
+    # r"WaW Campaign Maps": r"https://callofdutyrepo.com/waw-campaign-maps/",
+    # r"Waw Zombie Maps": r"https://callofdutyrepo.com/wawmaps/",
+    # r"WaW Mods": r"https://callofdutyrepo.com/waw-mods/",
+    "BO1 Mods": r"https://callofdutyrepo.com/bo1-mods/",
+    # "BO1 Maps": r"https://callofdutyrepo.com/bo1-maps-by-name/",
     #    r"BO3 Maps": r"https://callofdutyrepo.com/bo3-maps/",
     #    r"BO3 Mods": r"https://callofdutyrepo.com/bo3-zombie-mods/",
 }
@@ -39,7 +39,7 @@ class CoDSpecific:
     def download_info(input_dir: pathlib.Path):
         for link in LINK_LIST:
             path = pathlib.Path(input_dir)
-            archive = pathlib.Path(f"{path}\\Archive {link}.txt".replace(" ", "_"))
+            archive = pathlib.Path(f"{path}//Archive {link}.txt".replace(" ", "_"))
             if not pathlib.Path.is_dir(path):
                 pathlib.Path.mkdir(path)
             subprocess.run(f"codrscrape.exe -l --path {path} --archive {archive} -w --to-screen {LINK_LIST.get(link)})")
@@ -48,7 +48,7 @@ class CoDSpecific:
     def download_mods(input_array):
         for json_ in input_array:
             if str(json_).endswith("metadata.json"):
-                file_path = pathlib.Path(f"{get_one_dir_up(json_)}\\mod.zip")
+                file_path = pathlib.Path(f"{get_one_dir_up(json_)}//mod.zip")
                 print()
                 print(f"Checking if {file_path} Already Exists")
                 if pathlib.Path.is_file(file_path):
@@ -164,9 +164,44 @@ def is_download_link_functional(download_link: str) -> bool:
         return False
 
 
-def download_file(input_link: str, output_path: pathlib.Path):
+def download_file(input_link: str, output_path: pathlib.Path, num_attempts=0):
     if input_link:
-        open(output_path, 'wb').write(requests.get(str(input_link), allow_redirects=True).content)
+        try:
+            response = requests.get(str(input_link), allow_redirects=True)
+            if response.status_code == 200:
+                content_type = response.headers.get('Content-Type', '')
+                if not content_type.startswith('text/html'):
+                    open(output_path, 'wb').write(response.content)
+                else:
+                    print("Failed to download file. Response content is HTML.")
+                    print("Waiting before retrying...")
+                    time.sleep(60)
+                    if num_attempts < 1:
+                        download_file(input_link, output_path, num_attempts + 1)
+                    else:
+                        print("Exceeded maximum number of attempts. Adding to error array.")
+                        exception_array.append(output_path)
+            else:
+                print(f"Failed to download file. Status code: {response.status_code}")
+                print("Waiting before retrying...")
+                time.sleep(60)
+                if num_attempts < 1:
+                    download_file(input_link, output_path, num_attempts + 1)
+                else:
+                    print("Exceeded maximum number of attempts. Adding to error array.")
+                    exception_array.append(output_path)
+        except Exception as e:
+            print(f"Error downloading file: {e}")
+            print("Waiting before retrying...")
+            time.sleep(60)
+            if num_attempts < 1:
+                download_file(input_link, output_path, num_attempts + 1)
+            else:
+                print("Exceeded maximum number of attempts. Adding to error array.")
+
+
+
+
 
 
 def get_item_from_json(input_json: pathlib.Path, input_key: str) -> str:
@@ -198,9 +233,9 @@ CoDSpecific.download_info(DIR_TO_PROCESS)
 del_files_by_ext_in_tree(DIR_TO_PROCESS, ".tmp")
 CoDSpecific.download_mods(get_files_by_extension_in_tree(DIR_TO_PROCESS, "metadata.json"))
 CoDSpecific.extract_mod_archives(DIR_TO_PROCESS)
-CoDSpecific.organize_unzipped_mods(DIR_TO_PROCESS)
+# CoDSpecific.organize_unzipped_mods(DIR_TO_PROCESS)
 CoDSpecific.print_final()
-time.sleep(999999)
+time.sleep(999999999)
 quit()
 
 
