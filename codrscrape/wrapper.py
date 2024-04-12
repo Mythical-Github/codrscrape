@@ -154,50 +154,42 @@ def del_files_by_ext_in_tree(input_dir: pathlib.Path, file_type: str):
 
 
 def is_download_link_functional(download_link: str) -> bool:
-    try:
-        if requests.get(download_link, allow_redirects=True).status_code == 200:
-            return True
-        else:
-            return False
-    except Exception as DownloadLinkNotFunctionError:
-        print(DownloadLinkNotFunctionError)
+    if not download_link:
         return False
 
+    response = requests.head(download_link, allow_redirects=True)
+    return response.status_code == 200
 
-def download_file(input_link: str, output_path: pathlib.Path, num_attempts=0):
-    if input_link:
+
+
+def download_file(input_link: str, output_path: pathlib.Path, max_attempts=3):
+    if not input_link:
+        return
+    
+    attempt = 0
+    while attempt < max_attempts:
         try:
-            response = requests.get(str(input_link), allow_redirects=True)
+            response = requests.get(input_link, allow_redirects=True, stream=True)
             if response.status_code == 200:
-                content_type = response.headers.get('Content-Type', '')
-                if not content_type.startswith('text/html'):
-                    open(output_path, 'wb').write(response.content)
-                else:
-                    print("Failed to download file. Response content is HTML.")
-                    print("Waiting before retrying...")
-                    time.sleep(60)
-                    if num_attempts < 1:
-                        download_file(input_link, output_path, num_attempts + 1)
-                    else:
-                        print("Exceeded maximum number of attempts. Adding to error array.")
-                        exception_array.append(output_path)
+                with open(output_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                print(f"Downloaded {output_path}")
+                return
             else:
-                print(f"Failed to download file. Status code: {response.status_code}")
-                print("Waiting before retrying...")
-                time.sleep(60)
-                if num_attempts < 1:
-                    download_file(input_link, output_path, num_attempts + 1)
-                else:
-                    print("Exceeded maximum number of attempts. Adding to error array.")
-                    exception_array.append(output_path)
+                print(f"Failed to download {output_path}. Status code: {response.status_code}")
         except Exception as e:
-            print(f"Error downloading file: {e}")
-            print("Waiting before retrying...")
-            time.sleep(60)
-            if num_attempts < 1:
-                download_file(input_link, output_path, num_attempts + 1)
-            else:
-                print("Exceeded maximum number of attempts. Adding to error array.")
+            print(f"Error downloading {output_path}: {e}")
+        
+        attempt += 1
+        if attempt < max_attempts:
+            # Exponential backoff: wait 2^attempt seconds before retrying
+            wait_time = 2 ** attempt
+            print(f"Waiting {wait_time} seconds before retrying...")
+            time.sleep(wait_time)
+        else:
+            print(f"Exceeded maximum number of attempts for {output_path}. Adding to error array.")
+            exception_array.append(output_path)
 
 
 
